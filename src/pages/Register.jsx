@@ -25,26 +25,25 @@ export default function Register() {
   }
 
   const strength = getPasswordStrength(password);
+async function handleSubmit(e) {
+  e.preventDefault();
+  setError('');
 
-  async function handleSubmit(e) {
-    e.preventDefault(); // stops page from refreshing
-    setError('');
-
-    if (!name || !email || !password) {
-      setError('Please fill all fields');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const data = await registerUser(name, email, password);
-      login(data.user, data.token); // save user globally
-      navigate('/dashboard'); // go to dashboard after register
-    } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed. Try again.');
-    }
-    setLoading(false);
+  if (!name || !email || !password) {
+    setError('Please fill all fields');
+    return;
   }
+
+  setLoading(true);
+  try {
+    const res = await registerUser(name, email, password);
+    login(res.data.user, res.data.token);
+    navigate('/dashboard');
+  } catch (err) {
+    setError(err.response?.data?.error || 'Registration failed. Try again.');
+  }
+  setLoading(false);
+}
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 20px' }}>

@@ -1,19 +1,38 @@
 // api.js
-// All backend API calls live here
-// Keeps code organized - one place to manage all requests
+// All backend API calls in one place
+// axios automatically sends/receives JSON data
 
 import axios from 'axios';
 
-const API_BASE = 'http://localhost:5000/api'; // your Node.js backend URL
+const API = axios.create({
+  baseURL: 'http://localhost:5000/api',
+});
 
-// Register new user
-export async function registerUser(name, email, password) {
-  const res = await axios.post(`${API_BASE}/auth/register`, { name, email, password });
-  return res.data;
-}
+// Automatically attach JWT token to every request
+API.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
-// Login user
-export async function loginUser(email, password) {
-  const res = await axios.post(`${API_BASE}/auth/login`, { email, password });
-  return res.data;
-}
+// ── Auth APIs ──────────────────────────────
+export const registerUser = (name, email, password) =>
+  API.post('/auth/register', { name, email, password });
+
+export const loginUser = (email, password) =>
+  API.post('/auth/login', { email, password });
+
+export const getCurrentUser = () =>
+  API.get('/auth/me');
+
+// ── Scan APIs (we'll use on Day 5) ─────────
+export const detectScam = (type, content, language) =>
+  API.post('/detect', { type, content, language });
+
+export const getScanHistory = () =>
+  API.get('/history');
+
+export const deleteScan = (id) =>
+  API.delete(`/history/${id}`);

@@ -15,25 +15,25 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setError('');
+ async function handleSubmit(e) {
+  e.preventDefault();
+  setError('');
 
-    if (!email || !password) {
-      setError('Please fill all fields');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const data = await loginUser(email, password);
-      login(data.user, data.token);
-      navigate('/dashboard');
-    } catch (err) {
-      setError(err.response?.data?.error || 'Login failed. Check your credentials.');
-    }
-    setLoading(false);
+  if (!email || !password) {
+    setError('Please fill all fields');
+    return;
   }
+
+  setLoading(true);
+  try {
+    const res = await loginUser(email, password);
+    login(res.data.user, res.data.token);
+    navigate('/dashboard');
+  } catch (err) {
+    setError(err.response?.data?.error || 'Login failed. Check your credentials.');
+  }
+  setLoading(false);
+}
 
   return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 20px' }}>
