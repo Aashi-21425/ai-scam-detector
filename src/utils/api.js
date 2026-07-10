@@ -28,8 +28,8 @@ export const getCurrentUser = () =>
   API.get('/auth/me');
 
 // ── Scan APIs (we'll use on Day 5) ─────────
-export const detectScam = (type, content, language) =>
-  API.post('/detect', { type, content, language });
+export const detectScam = (type, content, language, userId) =>
+  API.post('/detect', { type, content, language, userId});
 
 export const getScanHistory = () =>
   API.get('/history');
