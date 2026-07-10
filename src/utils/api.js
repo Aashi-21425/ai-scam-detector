@@ -31,8 +31,8 @@ export const getCurrentUser = () =>
 export const detectScam = (type, content, language, userId) =>
   API.post('/detect', { type, content, language, userId});
 
-export const getScanHistory = () =>
-  API.get('/history');
+export const getScanHistory = (userId) =>
+  userId ? API.get(`/history/user/${userId}`) : API.get('/history');
 
 export const deleteScan = (id) =>
   API.delete(`/history/${id}`);
