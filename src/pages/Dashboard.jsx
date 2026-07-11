@@ -2,10 +2,15 @@
 // First page user sees after login
 // Shows welcome message, stats, quick scan button
 // Dashboard.jsx - Updated with charts and real data
+// Dashboard.jsx - Updated with charts and real data
+
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getScanHistory } from '../utils/api';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+
+const COLORS = ['#ff4444', '#ff9900', '#00cc55'];
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
@@ -13,19 +18,24 @@ export default function Dashboard() {
   const [scans, setScans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-    totalScans: 0, highRisk: 0, mediumRisk: 0, lowRisk: 0,
+    totalScans: 0,
+    highRisk: 0,
+    mediumRisk: 0,
+    lowRisk: 0,
   });
 
   useEffect(() => {
     if (!user) { navigate('/login'); return; }
     fetchData();
-  }, []);
+  }, [user]);
 
   async function fetchData() {
     try {
-      const res = await getScanHistory(user?.id);
+      const res = await getScanHistory();
       const data = res.data.scans || [];
       setScans(data);
+
+      // Calculate stats
       setStats({
         totalScans: data.length,
         highRisk: data.filter(s => s.riskLevel === 'HIGH').length,
@@ -43,14 +53,25 @@ export default function Dashboard() {
     navigate('/');
   }
 
-  if (!user) return null;
+  // Pie chart data
+  const pieData = [
+    { name: 'High Risk', value: stats.highRisk },
+    { name: 'Medium Risk', value: stats.mediumRisk },
+    { name: 'Low Risk', value: stats.lowRisk },
+  ].filter(d => d.value > 0);
 
-  const total = stats.totalScans || 1;
+  // Bar chart data — scans by type
+  const typeData = ['text', 'email', 'url', 'phone'].map(type => ({
+    name: type.toUpperCase(),
+    scans: scans.filter(s => s.type === type).length,
+  }));
+
+  if (!user) return null;
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 20px' }}>
 
-      {/* Welcome */}
+      {/* ── Welcome ── */}
       <div className="card" style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ margin: 0, color: '#a0c4ff', fontSize: 24 }}>
@@ -67,7 +88,7 @@ export default function Dashboard() {
         }}>Logout</button>
       </div>
 
-      {/* Stats Cards */}
+      {/* ── Stats Cards ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
         {[
           { label: 'Total Scans', value: stats.totalScans, color: '#a0c4ff', icon: '🔍' },
@@ -83,35 +104,41 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* Simple Chart — Risk Distribution */}
+      {/* ── Charts ── */}
       {stats.totalScans > 0 && (
-        <div className="card" style={{ marginBottom: 24 }}>
-          <h3 style={{ margin: '0 0 16px', color: '#a0c4ff', fontSize: 15 }}>📊 Risk Distribution</h3>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-            <span style={{ fontSize: 12, color: '#ff4444', width: 80 }}>🚨 High</span>
-            <div style={{ flex: 1, background: '#1a1a3e', borderRadius: 20, height: 20, overflow: 'hidden' }}>
-              <div style={{ width: `${(stats.highRisk / total) * 100}%`, background: '#ff4444', height: '100%', borderRadius: 20, transition: 'width 1s' }} />
-            </div>
-            <span style={{ fontSize: 12, color: '#ff4444', width: 30 }}>{stats.highRisk}</span>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
+
+          {/* Pie Chart */}
+          <div className="card">
+            <h3 style={{ margin: '0 0 16px', color: '#a0c4ff', fontSize: 15 }}>🥧 Risk Distribution</h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie data={pieData} cx="50%" cy="50%" outerRadius={70} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                  {pieData.map((entry, index) => (
+                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-            <span style={{ fontSize: 12, color: '#ff9900', width: 80 }}>⚠️ Medium</span>
-            <div style={{ flex: 1, background: '#1a1a3e', borderRadius: 20, height: 20, overflow: 'hidden' }}>
-              <div style={{ width: `${(stats.mediumRisk / total) * 100}%`, background: '#ff9900', height: '100%', borderRadius: 20, transition: 'width 1s' }} />
-            </div>
-            <span style={{ fontSize: 12, color: '#ff9900', width: 30 }}>{stats.mediumRisk}</span>
-          </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: 12, color: '#00cc55', width: 80 }}>✅ Low</span>
-            <div style={{ flex: 1, background: '#1a1a3e', borderRadius: 20, height: 20, overflow: 'hidden' }}>
-              <div style={{ width: `${(stats.lowRisk / total) * 100}%`, background: '#00cc55', height: '100%', borderRadius: 20, transition: 'width 1s' }} />
-            </div>
-            <span style={{ fontSize: 12, color: '#00cc55', width: 30 }}>{stats.lowRisk}</span>
+
+          {/* Bar Chart */}
+          <div className="card">
+            <h3 style={{ margin: '0 0 16px', color: '#a0c4ff', fontSize: 15 }}>📊 Scans by Type</h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={typeData}>
+                <XAxis dataKey="name" stroke="#6677aa" fontSize={12} />
+                <YAxis stroke="#6677aa" fontSize={12} />
+                <Tooltip contentStyle={{ background: '#0f0f2a', border: '1px solid #1e1e4e' }} />
+                <Bar dataKey="scans" fill="#3a6cf4" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       )}
 
-      {/* Quick Actions */}
+      {/* ── Quick Actions ── */}
       <div className="card" style={{ marginBottom: 24 }}>
         <h3 style={{ margin: '0 0 16px', color: '#a0c4ff' }}>Quick Actions</h3>
         <div style={{ display: 'flex', gap: 12 }}>
@@ -128,7 +155,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Recent Scans */}
+      {/* ── Recent Scans ── */}
       <div className="card">
         <h3 style={{ margin: '0 0 16px', color: '#a0c4ff' }}>🕐 Recent Scans</h3>
         {loading ? (
